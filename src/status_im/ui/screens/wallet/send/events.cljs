@@ -266,7 +266,8 @@
 (defn discard-transaction
   [{:keys [db]}]
   (let [{:keys [id]} (get-in db [:wallet :send-transaction])]
-    (merge {:db (update-in db [:wallet :send-transaction] merge clear-send-properties)}
+    (merge {:db (-> db  (update-in [:wallet :send-transaction] merge clear-send-properties)
+                        (assoc-in [:wallet :send-transaction :password] nil))}
            (when id
              {:discard-transaction id}))))
 
@@ -285,9 +286,10 @@
 (handlers/register-handler-fx
   :wallet/cancel-signing-modal
   (fn [{:keys [db]} _]
-    {:db (update-in db [:wallet :send-transaction] assoc
-                    :signing? false
-                    :wrong-password? false)}))
+    {:db (-> db (update-in [:wallet :send-transaction] assoc
+                           :signing? false
+                           :wrong-password? false)
+             (assoc-in [:wallet :send-transaction :password] nil))}))
 
 (handlers/register-handler-fx
   :wallet.send/set-password
