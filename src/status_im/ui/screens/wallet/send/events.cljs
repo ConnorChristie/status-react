@@ -29,7 +29,7 @@
                     (or on-sent #())))
 
 (defn- send-tokens [{:keys [web3 from to value gas gas-price symbol network on-sent]}]
-  (let [contract (:address (tokens/symbol->token (ethereum/network->chain-keyword network) symbol))]
+  (let [contract (:address (tokens/symbol->token network symbol))]
     (erc20/transfer web3 contract from to value {:gas gas :gasPrice gas-price} (or on-sent #()))))
 
 (re-frame/reg-fx

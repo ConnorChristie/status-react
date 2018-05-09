@@ -100,7 +100,7 @@
                        :address "enode://9f0a55f116aedb40d4036d9a385d505d9c183fd708ef1aa2f883895df97864f758eee911c26c86732ae13a57664a076de2527189f983ee24dda2a4cb5f5db777@127.0.0.1:30303"
                        :payment {:address "0x744d70FDBE2Ba4CF95131626614a1763DF805B9E"
                                  :amount  (money/bignumber 500000000000)
-                                 :symbol  :ETH}}}
+                                 :symbol  :STT}}}
    :mainnet {"main" {:id      "main"
                      :name    "Status mainnet mailserver"
                      :address "enode://b963569aac14785f756ecf97e7549a513dea993a1bc744c4f8efe2b4e9479500dd3f5d18f3da19f6550b8bd0d8770350950c9a7da8168b44865402dcc9a51657@51.15.35.110:30403"}}})

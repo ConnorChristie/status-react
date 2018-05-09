@@ -1,5 +1,5 @@
 (ns status-im.ui.screens.offline-messaging-settings.events
-  (:require [re-frame.core :refer [dispatch]]
+  (:require [re-frame.core :refer [dispatch subscribe]]
             [status-im.utils.handlers :as handlers]
             [status-im.utils.handlers-macro :as handlers-macro]
             [status-im.ui.screens.accounts.events :as accounts-events]
@@ -19,13 +19,24 @@
                               (accounts-events/update-settings (assoc-in settings [:wnode network] wnode))))))
 
 (handlers/register-handler-fx
- :set-wnode-tx
- (fn [{:keys [db] :as cofx} [_ wnode tx]]
+ :save-transaction
+ (fn [{:keys [db] :as cofx} [_ wnode hash]]
+   (let [network     (ethereum/network->chain-keyword (:network db))
+         settings    (get-in db [:account/account :settings])
+         transaction @(subscribe [:wallet.transactions/transaction-details])]
+     (when (= hash (:hash transaction))
+       (handlers-macro/merge-fx cofx
+                                {:dispatch [::save-wnode wnode hash]}
+                                (accounts-events/update-settings (assoc-in settings [:wnode-payment network wnode] hash)))))))
+
+(handlers/register-handler-fx
+ :sent-wnode-tx
+ (fn [{:keys [db] :as cofx} [_ wnode hash]]
    (let [network  (ethereum/network->chain-keyword (:network db))
          settings (get-in db [:account/account :settings])]
      (handlers-macro/merge-fx cofx
-                              {:dispatch [::save-wnode wnode tx]}
-                              (accounts-events/update-settings (assoc-in settings [:wnode-payment network wnode] tx))))))
+                              {:db       (assoc-in db [:wallet :current-transaction] hash)
+                               :dispatch [:save-transaction wnode hash]}))))
 
 (handlers/register-handler-fx
  ::pay-wnode
@@ -42,7 +53,7 @@
                                       :gas-price (money/->wei :gwei 5)
                                       :symbol    symbol
                                       :network   network
-                                      :on-sent   #(dispatch [:set-wnode-tx wnode %2])}})))
+                                      :on-sent   #(dispatch [:sent-wnode-tx wnode %2])}})))
 
 (handlers/register-handler-fx
  :select-wnode
@@ -50,7 +61,7 @@
    (let [network    (ethereum/network->chain-keyword (:network db))
          payment    (get-in db [:inbox/wnodes network wnode :payment])
          payment-tx (get-in db [:account/account :settings :wnode-payment network wnode])]
-     (if (or (nil? payment) (not (nil? payment-tx)))
+     (if (nil? payment)
        {:dispatch [::save-wnode wnode]}
        {:dispatch [::pay-wnode wnode]}))))
 
