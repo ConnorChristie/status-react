@@ -22,8 +22,8 @@
       symbol      (assoc :symbol symbol)
       gas         (assoc :gas (money/bignumber gas))
       gasPrice    (assoc :gas-price (money/bignumber gasPrice))
-      (and symbol (not gasPrice))
-      (assoc :gas-price (ethereum/estimate-gas symbol)))))
+      (and symbol (not gas))
+      (assoc :gas (ethereum/estimate-gas symbol)))))
 
 (defn- extract-details
   "First try to parse as EIP681 URI, if not assume this is an address directly.

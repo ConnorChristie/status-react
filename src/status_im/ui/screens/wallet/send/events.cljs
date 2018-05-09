@@ -23,14 +23,14 @@
  (fn [{:keys [password id on-completed]}]
    (status/approve-sign-requests (list id) password on-completed)))
 
-(defn- send-ethers [{:keys [web3 from to value gas gas-price]}]
+(defn- send-ethers [{:keys [web3 from to value gas gas-price on-sent]}]
   (.sendTransaction (.-eth web3)
                     (clj->js {:from from :to to :value value :gas gas :gasPrice gas-price})
-                    #()))
+                    (or on-sent #())))
 
-(defn- send-tokens [{:keys [web3 from to value gas gas-price symbol network]}]
+(defn- send-tokens [{:keys [web3 from to value gas gas-price symbol network on-sent]}]
   (let [contract (:address (tokens/symbol->token (ethereum/network->chain-keyword network) symbol))]
-    (erc20/transfer web3 contract from to value {:gas gas :gasPrice gas-price} #())))
+    (erc20/transfer web3 contract from to value {:gas gas :gasPrice gas-price} (or on-sent #()))))
 
 (re-frame/reg-fx
  ::send-transaction
@@ -116,10 +116,12 @@
      :symbol     symbol
      :value      (money/bignumber (or value 0))
      :data       data
-     :gas        (when (seq gas)
-                   (money/bignumber (money/to-decimal gas)))
-     :gas-price  (when (seq gasPrice)
-                   (money/bignumber (money/to-decimal gasPrice)))
+     :gas        (if (string? gas)
+                   (money/bignumber (money/to-decimal gas))
+                   gas)
+     :gas-price  (if (string? gasPrice)
+                   (money/bignumber (money/to-decimal gasPrice))
+                   gasPrice)
      :timestamp  now
      :message-id message_id}))
 
