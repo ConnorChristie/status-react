@@ -17,8 +17,8 @@
 
 (spec/def :wnode/payment (allowed-keys :req-un [::address ::amount ::symbol]))
 (spec/def :wnode/wnode (allowed-keys
-                         :req-un [:wnode/address :wnode/name :wnode/id]
-                         :opt-un [:wnode/payment]))
+                        :req-un [:wnode/address :wnode/name :wnode/id]
+                        :opt-un [:wnode/payment]))
 
 (spec/def :inbox/password ::not-blank-string)
 (spec/def :inbox/wnodes (spec/nilable (spec/map-of keyword? (spec/map-of :wnode/id :wnode/wnode))))

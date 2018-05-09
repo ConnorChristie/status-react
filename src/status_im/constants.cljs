@@ -95,7 +95,7 @@
              "backup" {:id      "backup"
                        :name    "Status testnet mailserver B"
                        :address "enode://90cbf961c87eb837adc1300a0a6722a57134d843f0028a976d35dff387f101a2754842b6b694e50a01093808f304440d4d968bcbc599259e895ff26e5a1a17cf@51.15.194.39:30303"}
-              "paid"  {:id      "paid"
+             "paid"   {:id      "paid"
                        :name    "Status testnet mailserver paid, experimental"
                        :address "enode://9f0a55f116aedb40d4036d9a385d505d9c183fd708ef1aa2f883895df97864f758eee911c26c86732ae13a57664a076de2527189f983ee24dda2a4cb5f5db777@127.0.0.1:30303"
                        :payment {:address "0x744d70FDBE2Ba4CF95131626614a1763DF805B9E"
