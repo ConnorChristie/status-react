@@ -61,7 +61,7 @@
    (let [network    (ethereum/network->chain-keyword (:network db))
          payment    (get-in db [:inbox/wnodes network wnode :payment])
          payment-tx (get-in db [:account/account :settings :wnode-payment network wnode])]
-     (if (nil? payment)
+     (if (or (nil? payment) (not (nil? payment-tx)))
        {:dispatch [::save-wnode wnode]}
        {:dispatch [::pay-wnode wnode]}))))
 
