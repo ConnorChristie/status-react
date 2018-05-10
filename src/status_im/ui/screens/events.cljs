@@ -24,6 +24,7 @@
             status-im.ui.screens.wallet.choose-recipient.events
             status-im.ui.screens.browser.events
             status-im.ui.screens.offline-messaging-settings.events
+            status-im.ui.screens.currency-settings.events
             status-im.ui.screens.usage-data.events
             [re-frame.core :as re-frame]
             [status-im.native-module.core :as status]
@@ -33,6 +34,7 @@
             [status-im.i18n :as i18n]
             [status-im.js-dependencies :as dependencies]
             [status-im.transport.core :as transport]
+            [status-im.transport.inbox :as inbox]
             [status-im.ui.screens.db :refer [app-db]]
             [status-im.utils.datetime :as time]
             [status-im.utils.ethereum.core :as ethereum]
@@ -205,6 +207,11 @@
  (fn [_]
    (status/close-application)))
 
+(re-frame/reg-fx
+ ::app-state-change-fx
+ (fn [state]
+   (status/app-state-change state)))
+
 ;;;; Handlers
 
 (handlers/register-handler-db
@@ -295,6 +302,7 @@
  (fn [_ [_ address events-after]]
    {:dispatch-n (cond-> [[:initialize-account-db address]
                          [:initialize-protocol address]
+                         [:fetch-web3-node-version]
                          [:initialize-sync-listener]
                          [:load-contacts]
                          [:load-contact-groups]
@@ -332,6 +340,20 @@
          network-config   (or (get-in networks [network :config])
                               (get-in default-networks [default-network :config]))]
      {:initialize-geth-fx network-config})))
+
+(handlers/register-handler-fx
+ :fetch-web3-node-version-callback
+ (fn [{:keys [db]} [_ resp]]
+   (when-let [git-commit (nth (re-find #"-([0-9a-f]{7,})/" resp) 1)]
+     {:db (assoc db :web3-node-version git-commit)})))
+
+(handlers/register-handler-fx
+ :fetch-web3-node-version
+ (fn [{{:keys [web3] :as db} :db} _]
+   (.. web3 -version (getNode (fn [err resp]
+                                (when-not err
+                                  (re-frame/dispatch [:fetch-web3-node-version-callback resp])))))
+   nil))
 
 (handlers/register-handler-fx
  :webview-geo-permissions-granted
@@ -406,8 +428,14 @@
 
 (handlers/register-handler-fx
  :app-state-change
- (fn [_ [_ state]]
-   (status/app-state-change state)))
+ (fn [{{:keys [network-status mailserver-status]} :db :as cofx} [_ state]]
+   (let [app-coming-from-background? (= state "active")
+         should-recover? (and app-coming-from-background?
+                              (= network-status :online)
+                              (not= mailserver-status :connecting))]
+     (handlers-macro/merge-fx cofx
+                              {::app-state-change-fx state}
+                              (inbox/recover-offline-inbox should-recover?)))))
 
 (handlers/register-handler-fx
  :request-permissions

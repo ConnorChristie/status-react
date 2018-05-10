@@ -4,7 +4,7 @@ import pytest
 import emoji
 
 from tests.base_test_case import MultipleDeviceTestCase
-from tests import group_chat_users, get_current_time
+from tests import group_chat_users, get_current_time, marks
 from views.sign_in_view import SignInView
 
 unicode_text_message = '%s%s%s%s %s%s%s%s%s%s%s' % (chr(355), chr(275), chr(353), chr(539), chr(1084), chr(949),
@@ -17,20 +17,19 @@ emoji_unicode_1 = emoji.EMOJI_UNICODE[emoji_name_1]
 message_with_new_line = 'message' '\n' 'with new line'
 
 
-@pytest.mark.all
-@pytest.mark.chat
+@marks.all
+@marks.chat
 class TestMessages(MultipleDeviceTestCase):
 
-    @pytest.mark.pr
-    def test_one_to_one_chat_messages_and_delete_chat(self):
+    @marks.pr
+    @marks.testrail_case_id(3390)
+    def test_one_to_one_chat_messages(self):
         self.create_drivers(2)
         device_1, device_2 = SignInView(self.drivers[0]), SignInView(self.drivers[1])
         for sign_in in device_1, device_2:
             sign_in.create_user()
         device_1_home, device_2_home = device_1.get_home_view(), device_2.get_home_view()
         device_2_public_key = device_2_home.get_public_key()
-        device_2_profile = device_2_home.get_profile_view()
-        device_2_username = device_2_profile.username_text.text
         device_1_home.add_contact(device_2_public_key)
         device_1_chat = device_1_home.get_chat_view()
 
@@ -77,10 +76,10 @@ class TestMessages(MultipleDeviceTestCase):
             web_view.find_full_text('Status, the Ethereum discovery tool.')
             device_1_chat.back_button.click()
 
-        device_1_chat.delete_chat(device_2_username[:25], self.errors)
         self.verify_no_errors()
 
-    @pytest.mark.pr
+    @marks.pr
+    @marks.testrail_case_id(3391)
     def test_group_chat_messages_and_delete_chat(self):
         self.create_drivers(3)
 
@@ -142,7 +141,8 @@ class TestMessages(MultipleDeviceTestCase):
 
         self.verify_no_errors()
 
-    @pytest.mark.pr
+    @marks.pr
+    @marks.testrail_case_id(3392)
     def test_public_chat(self):
         self.create_drivers(2)
         device_1, device_2 = SignInView(self.drivers[0]), SignInView(self.drivers[1])
