@@ -208,8 +208,8 @@ class BaseView(object):
                 'k': 39, 'l': 40, 'm': 41, 'n': 42, 'o': 43, 'p': 44, 'q': 45, 'r': 46, 's': 47, 't': 48,
                 'u': 49, 'v': 50, 'w': 51, 'x': 52, 'y': 53, 'z': 54}
         time.sleep(3)
+        info("Enter '%s' using native keyboard" % string)
         for i in string:
-            info("Tap '%s' on native keyboard" % i)
             if type(keys[i]) is list:
                 keycode, metastate = keys[i][0], keys[i][1]
             else:
@@ -231,13 +231,13 @@ class BaseView(object):
     def element_by_text(self, text, element_type='button'):
         info("Looking for an element by text: '%s'" % text)
         element = self.element_types[element_type](self.driver)
-        element.locator = element.Locator.xpath_selector('//*[@text="' + text + '"]')
+        element.locator = element.Locator.text_selector(text)
         return element
 
     def element_by_text_part(self, text, element_type='base'):
         info("Looking for an element by text part: '%s'" % text)
         element = self.element_types[element_type](self.driver)
-        element.locator = element.Locator.xpath_selector('//*[contains(@text, "' + text + '")]')
+        element.locator = element.Locator.text_part_selector(text)
         return element
 
     def element_starts_with_text(self, text, element_type='base'):

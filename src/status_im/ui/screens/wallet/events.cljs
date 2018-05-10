@@ -10,7 +10,8 @@
             [status-im.utils.transactions :as transactions]
             [taoensso.timbre :as log]
             status-im.ui.screens.wallet.request.events
-            [status-im.utils.money :as money]))
+            [status-im.utils.money :as money]
+            [status-im.constants :as constants]))
 
 (defn get-balance [{:keys [web3 account-id on-success on-error]}]
   (if (and web3 account-id)
@@ -65,11 +66,18 @@
 
 (reg-fx
  :get-transactions
- (fn [{:keys [network account-id success-event error-event]}]
+ (fn [{:keys [web3 network account-id token-addresses success-event error-event]}]
    (transactions/get-transactions network
                                   account-id
                                   #(re-frame/dispatch [success-event %])
-                                  #(re-frame/dispatch [error-event %]))))
+                                  #(re-frame/dispatch [error-event %]))
+   (doseq [direction [:inbound :outbound]]
+     (erc20/get-token-transactions web3
+                                   network
+                                   token-addresses
+                                   direction
+                                   account-id
+                                   #(re-frame/dispatch [success-event %])))))
 
 ;; TODO(oskarth): At some point we want to get list of relevant assets to get prices for
 (reg-fx
@@ -93,11 +101,12 @@
 ;; Handlers
 (handlers/register-handler-fx
  :update-wallet
- (fn [{{:keys [web3 account/account network network-status] :as db} :db} _]
-   (let [chain    (ethereum/network->chain-keyword network)
-         mainnet? (= :mainnet chain)
-         address  (:address account)
-         symbols  (get-in account [:settings :wallet :visible-tokens chain])]
+ (fn [{{:keys [web3 account/account network network-status] {:keys [address settings]} :account/account :as db} :db} _]
+   (let [chain       (ethereum/network->chain-keyword network)
+         mainnet?    (= :mainnet chain)
+         symbols     (get-in settings [:wallet :visible-tokens chain])
+         currency-id (or (get-in settings [:wallet :currency]) :usd)
+         currency    (get constants/currencies currency-id)]
      (when (not= network-status :offline)
        {:get-balance {:web3          web3
                       :account-id    address
@@ -110,7 +119,7 @@
                              :success-event :update-token-balance-success
                              :error-event   :update-token-balance-fail}
         :get-prices  {:from          (if mainnet? (conj symbols "ETH") ["ETH"])
-                      :to            ["USD"]
+                      :to            [(:code currency)]
                       :success-event :update-prices-success
                       :error-event   :update-prices-fail}
         :db          (-> db
@@ -121,21 +130,42 @@
 
 (handlers/register-handler-fx
  :update-transactions
- (fn [{{:keys [network network-status] :as db} :db} _]
+ (fn [{{:keys [network network-status web3] :as db} :db} _]
    (when (not= network-status :offline)
-     {:get-transactions {:account-id    (get-in db [:account/account :address])
-                         :network       network
-                         :success-event :update-transactions-success
-                         :error-event   :update-transactions-fail}
-      :db               (-> db
-                            (clear-error-message :transactions-update)
-                            (assoc-in [:wallet :transactions-loading?] true))})))
+     (let [chain           (ethereum/network->chain-keyword network)
+           all-tokens      (tokens/tokens-for chain)
+           token-addresses (map :address all-tokens)]
+       {:get-transactions {:account-id      (get-in db [:account/account :address])
+                           :token-addresses token-addresses
+                           :network         network
+                           :web3            web3
+                           :success-event   :update-transactions-success
+                           :error-event     :update-transactions-fail}
+        :db               (-> db
+                              (clear-error-message :transactions-update)
+                              (assoc-in [:wallet :transactions-loading?] true))}))))
+
+(defn combine-entries [transaction token-transfer]
+  (merge transaction (select-keys token-transfer
+                                  (if (= :ETH (:symbol transaction))
+                                    [:symbol :from :to :value :type :token]
+                                    [:confirmations]))))
+
+(defn- tx-and-transfer?
+  "A helper function that checks if first argument is a transaction and the second argument a token transfer object."
+  [tx1 tx2]
+  (and (not (:transfer tx1)) (:transfer tx2)))
+
+(defn dedupe-transactions [tx1 tx2]
+  (cond (tx-and-transfer? tx1 tx2) (combine-entries tx1 tx2)
+        (tx-and-transfer? tx2 tx1) (combine-entries tx2 tx1)
+        :else tx2))
 
 (handlers/register-handler-db
  :update-transactions-success
  (fn [db [_ transactions]]
    (-> db
-       (update-in [:wallet :transactions] merge transactions)
+       (update-in [:wallet :transactions] #(merge-with dedupe-transactions % transactions))
        (assoc-in [:wallet :transactions-loading?] false))))
 
 (handlers/register-handler-db
@@ -199,8 +229,9 @@
 
 (handlers/register-handler-fx
  :wallet/show-sign-transaction
- (fn [{:keys [db]} [_ id from-chat?]]
-   {:db       (assoc-in db [:wallet :send-transaction] {:id id
+ (fn [{:keys [db]} [_ {:keys [id method]} from-chat?]]
+   {:db       (assoc-in db [:wallet :send-transaction] {:id         id
+                                                        :method     method
                                                         :from-chat? from-chat?})
     :dispatch [:navigate-to-modal :wallet-send-transaction-modal]}))
 

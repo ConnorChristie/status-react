@@ -104,7 +104,7 @@
  (fn [_ _]
    {::show-transaction-moved true}))
 
-(defn prepare-transaction [{:keys [id message_id args]} now db]
+(defn prepare-transaction [{:keys [id message_id method args]} now db]
   ;;NOTE(goranjovic): the transactions started from chat using /send command
   ;; are only in ether, so this parameter defaults to ETH
   (let [{:keys [from to value symbol data gas gasPrice] :or {symbol :ETH}} args
@@ -118,6 +118,7 @@
      :to-name    (when (nil? to)
                    (i18n/label :t/new-contract))
      :symbol     symbol
+     :method     method
      :value      (money/bignumber (or value 0))
      :data       data
      :token      (when token
@@ -264,7 +265,7 @@
  (fn [{{:keys [web3] :as db} :db} [_ later?]]
    (let [db' (assoc-in db [:wallet :send-transaction :wrong-password?] false)
          network (:network db)
-         {:keys [amount id password to symbol gas gas-price]} (get-in db [:wallet :send-transaction])]
+         {:keys [amount id password to symbol method gas gas-price]} (get-in db [:wallet :send-transaction])]
      (if id
        {::accept-transaction {:id           id
                               :password     password
@@ -281,6 +282,7 @@
                             :gas       gas
                             :gas-price gas-price
                             :symbol    symbol
+                            :method    method
                             :network   network}}))))
 
 (handlers/register-handler-fx

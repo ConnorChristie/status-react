@@ -197,7 +197,8 @@
 (defn- send-transaction-panel [{:keys [modal? transaction scroll advanced? symbol]}]
   (let [{:keys [amount amount-error signing? to to-name token sufficient-funds? in-progress? from-chat?]} transaction
         symbol (or (:symbol token) symbol)
-        amount (or (:value token) amount)]
+        amount (or (:value token) amount)
+        amount-text-value (atom nil)]
     [wallet.components/simple-screen {:avoid-keyboard? (not modal?)
                                       :status-bar-type (if modal? :modal-wallet :wallet)}
      [toolbar from-chat? (if modal? act/close-white act/back-white)
@@ -222,7 +223,8 @@
                                      :input-options {:default-value  (str (money/to-fixed (money/wei->ether amount)))
                                                      :max-length     21
                                                      :on-focus       (fn [] (when (and scroll @scroll) (utils/set-timeout #(.scrollToEnd @scroll) 100)))
-                                                     :on-change-text #(re-frame/dispatch [:wallet.send/set-and-validate-amount %])}}]
+                                                     :on-change-text #(reset! amount-text-value %)
+                                                     :on-end-editing #(re-frame/dispatch [:wallet.send/set-and-validate-amount @amount-text-value])}}]
         [advanced-options advanced? transaction modal?]]]
       (if signing?
         [signing-buttons
