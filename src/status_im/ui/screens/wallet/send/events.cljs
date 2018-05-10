@@ -102,12 +102,16 @@
 (handlers/register-handler-fx
  :sign-later-from-chat
  (fn [_ _]
-   {::show-transaction-moved  true}))
+   {::show-transaction-moved true}))
 
-(defn prepare-transaction [{:keys [id message_id args]} now]
+(defn prepare-transaction [{:keys [id message_id args]} now db]
   ;;NOTE(goranjovic): the transactions started from chat using /send command
   ;; are only in ether, so this parameter defaults to ETH
-  (let [{:keys [from to value symbol data gas gasPrice] :or {symbol :ETH}} args]
+  (let [{:keys [from to value symbol data gas gasPrice] :or {symbol :ETH}} args
+        network (ethereum/network->chain-keyword (:network db))
+        token   (tokens/address->token network to)
+        token-value (when token
+                      (ethereum/hex->bignumber (str "0x" (string/join (take-last 64 data)))))]
     {:id         id
      :from       from
      :to         to
@@ -116,6 +120,8 @@
      :symbol     symbol
      :value      (money/bignumber (or value 0))
      :data       data
+     :token      (when token
+                   {:symbol (:symbol token) :value token-value})
      :gas        (if (string? gas)
                    (money/bignumber (money/to-decimal gas))
                    gas)
@@ -138,14 +144,15 @@
  (fn [{:keys [db now]} _]
    (let [{:keys [send-transaction transactions-queue]} (:wallet db)
          {:keys [id method args] :as queued-transaction} (last transactions-queue)
-         db' (update-in db [:wallet :transactions-queue] drop-last)]
-     (when (and (not (:id send-transaction)) queued-transaction)
+         db' (update-in db [:wallet :transactions-queue] drop-last)
+         network (ethereum/network->chain-keyword (:network db))]
+     (when (and (not (:waiting-signal? send-transaction)) queued-transaction)
        (cond
           ;;SEND TRANSACTION
          (= method constants/web3-send-transaction)
 
          (let [{:keys [gas gasPrice]} args
-               transaction (prepare-transaction queued-transaction now)
+               transaction (prepare-transaction queued-transaction now db)
                sending-from-bot-or-dapp? (not (get-in db [:wallet :send-transaction :waiting-signal?]))
                new-db (assoc-in db' [:wallet :transactions-unsigned id] transaction)
                sending-db {:id         id

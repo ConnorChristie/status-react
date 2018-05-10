@@ -84,22 +84,22 @@
 
 ;; "Sign Later" and "Sign Transaction >" buttons
 (defn- sign-buttons [amount-error to amount sufficient-funds? sign-later-handler modal?]
-  (let [sign-enabled?           (sign-enabled? amount-error to amount)
+  (let [sign-enabled?           (and sufficient-funds? (sign-enabled? amount-error to amount))
         immediate-sign-enabled? (or modal? (and sign-enabled? sufficient-funds?))]
     [bottom-buttons/bottom-buttons
      styles/sign-buttons
+     [button/button {:style               components.styles/flex
+                     :on-press            sign-later-handler
+                     :accessibility-label :sign-later-button}
+      (i18n/label :t/transactions-sign-later)]
      (when sign-enabled?
        [button/button {:style               components.styles/flex
-                       :on-press            sign-later-handler
-                       :accessibility-label :sign-later-button}
-        (i18n/label :t/transactions-sign-later)])
-     [button/button {:style               components.styles/flex
-                     :disabled?           (not immediate-sign-enabled?)
-                     :on-press            #(re-frame/dispatch [:wallet.send/set-signing? true])
-                     :text-style          {:color :white}
-                     :accessibility-label :sign-transaction-button}
-      (i18n/label :t/transactions-sign-transaction)
-      [vector-icons/icon :icons/forward {:color (if immediate-sign-enabled? :white :gray)}]]]))
+                       :disabled?           (not immediate-sign-enabled?)
+                       :on-press            #(re-frame/dispatch [:wallet.send/set-signing? true])
+                       :text-style          {:color :white}
+                       :accessibility-label :sign-transaction-button}
+        (i18n/label :t/transactions-sign-transaction)
+        [vector-icons/icon :icons/forward {:color (if immediate-sign-enabled? :white :gray)}]])]))
 
 (defn handler [discard?]
   (if discard?
@@ -180,7 +180,7 @@
      [react/text {:style styles/advanced-fees-text}
       (str (money/to-fixed (max-fee gas gas-price)) " " (i18n/label :t/eth))]
      [react/text {:style styles/advanced-fees-details-text}
-      (str (money/to-fixed gas) " * " (money/to-fixed (money/wei-> :gwei gas-price)) (i18n/label :t/gwei))]]]])
+      (str (money/to-fixed gas) " * " (money/to-fixed (money/wei-> :gwei gas-price)) " " (i18n/label :t/gwei))]]]])
 
 (defn- advanced-options [advanced? transaction modal?]
   [react/view {:style styles/advanced-wrapper}
@@ -195,7 +195,9 @@
      [advanced-cartouche transaction modal?])])
 
 (defn- send-transaction-panel [{:keys [modal? transaction scroll advanced? symbol]}]
-  (let [{:keys [amount amount-error signing? to to-name sufficient-funds? in-progress? from-chat?]} transaction]
+  (let [{:keys [amount amount-error signing? to to-name token sufficient-funds? in-progress? from-chat?]} transaction
+        symbol (or (:symbol token) symbol)
+        amount (or (:value token) amount)]
     [wallet.components/simple-screen {:avoid-keyboard? (not modal?)
                                       :status-bar-type (if modal? :modal-wallet :wallet)}
      [toolbar from-chat? (if modal? act/close-white act/back-white)
