@@ -1,12 +1,12 @@
 (ns status-im.ui.screens.offline-messaging-settings.events
-  (:require [re-frame.core :refer [dispatch subscribe]]
+  (:require [re-frame.core :refer [dispatch]]
             [status-im.utils.handlers :as handlers]
             [status-im.utils.handlers-macro :as handlers-macro]
             [status-im.ui.screens.accounts.events :as accounts-events]
             [status-im.i18n :as i18n]
-            [status-im.transport.core :as transport]
             [status-im.utils.ethereum.core :as ethereum]
-            [status-im.ui.screens.wallet.send.events :as send-events]
+            [status-im.utils.ethereum.erc20 :as erc20]
+            [status-im.utils.ethereum.tokens :as tokens]
             [status-im.utils.money :as money]))
 
 (handlers/register-handler-fx
@@ -33,17 +33,19 @@
  ::pay-wnode
  (fn [{{:keys [web3] :as db} :db} [_ wnode]]
    (let [network                         (ethereum/network->chain-keyword (:network db))
-         {:keys [address amount symbol]} (get-in db [:inbox/wnodes network wnode :payment])]
-     {:db                            (update-in db [:wallet :send-transaction] assoc :waiting-signal? false)
-      ::send-events/send-transaction {:web3      web3
-                                      :from      (get-in db [:account/account :address])
-                                      :to        address
-                                      :value     amount
-                                      :gas       (ethereum/estimate-gas symbol)
-                                      :gas-price (money/->wei :gwei 5)
-                                      :symbol    symbol
-                                      :network   network
-                                      :on-sent   #(dispatch [:save-wnode-transaction wnode %2])}})))
+         {:keys [address amount symbol]} (get-in db [:inbox/wnodes network wnode :payment])
+         contract                        (:address (tokens/symbol->token network symbol))
+         from                            (get-in db [:account/account :address])
+         gas                             (ethereum/estimate-gas symbol)
+         gas-price                       (money/->wei :gwei 5)]
+     {:db (update-in db [:wallet :send-transaction] assoc :waiting-signal? false)}
+     (erc20/transfer web3
+                     contract
+                     from
+                     address
+                     amount
+                     {:gas gas :gasPrice gas-price}
+                     #(dispatch [:save-wnode-transaction wnode %2])))))
 
 (handlers/register-handler-fx
  :select-wnode
