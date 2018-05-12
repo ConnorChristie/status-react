@@ -14,6 +14,7 @@
             status-im.ui.screens.group.chat-settings.events
             status-im.ui.screens.group.events
             status-im.ui.screens.navigation
+            status-im.ui.screens.add-new.new-chat.navigation
             status-im.ui.screens.network-settings.events
             status-im.ui.screens.profile.events
             status-im.ui.screens.qr-scanner.events
@@ -262,7 +263,7 @@
 (handlers/register-handler-fx
  :initialize-db
  (fn [{{:keys          [status-module-initialized? status-node-started?
-                        network-status network]
+                        network-status network device-UUID]
         :or {network (get app-db :network)}} :db}
       [_ encryption-key]]
    {::init-store encryption-key
@@ -271,14 +272,15 @@
                         :network-status network-status
                         :status-module-initialized? (or platform/ios? js/goog.DEBUG status-module-initialized?)
                         :status-node-started? status-node-started?
-                        :network network)}))
+                        :network network
+                        :device-UUID device-UUID)}))
 
 (handlers/register-handler-db
  :initialize-account-db
  (fn [{:keys [accounts/accounts accounts/create contacts/contacts networks/networks
               network network-status view-id navigation-stack
               access-scope->commands-responses
-              status-module-initialized? status-node-started?]
+              status-module-initialized? status-node-started? device-UUID]
        :or   [network (get app-db :network)]} [_ address]]
    (let [console-contact (get contacts constants/console-chat-id)
          current-account (accounts address)]
@@ -293,7 +295,8 @@
                     :networks/networks networks
                     :account/account current-account
                     :network-status network-status
-                    :network network)
+                    :network network
+                    :device-UUID device-UUID)
        console-contact
        (assoc :contacts/contacts {constants/console-chat-id console-contact})))))
 

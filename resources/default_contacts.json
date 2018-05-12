@@ -74,7 +74,7 @@
         "dapp?": true,
         "dapp-url":
         {
-            "en": "https://district0x.github.io/ethlance/resources/public/"
+            "en": "https://ethlance.com"
         },
         "description": "The future of work is now. Hire people or work yourself in return for ETH."
     },
@@ -92,6 +92,20 @@
             "en": "https://www.cryptokitties.co"
         },
         "description": "Collect and breed adorable digital cats."
+    },
+    "airswap":
+    {
+        "name":
+        {
+            "en": "AirSwap"
+        },
+        "photo-path": "contacts://airswap",
+        "dapp?": true,
+        "dapp-url":
+        {
+            "en": "https://www.airswap.io/trade"
+        },
+        "description": "Meet the future of trading."
     },
 
     "cryptopunks": {

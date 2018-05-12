@@ -50,9 +50,13 @@
 
    :help-improve                         "Help improve Status\nby sharing usage patterns"
    :help-improve?                        "Help improve Status?"
-   :help-improve-description             "We collect anonymous data to help improve Status."
-   :share-usage-data                     "Share usage"
-   :dont-want-to-share                   "No, I don't want to share"
+   :help-improve-description             "We collect anonymous data to understand how Status is used and inform future development. Whilst we appreciate your help to make Status better, this is an optional choice and can be changed at any time."
+   :learn-what-we-collect-link           "Learn more about what we collect"
+   :share-usage-data                     "Share data"
+   :dont-want-to-share                   "Do not share"
+   :confirmation-title                   "Share data with Status?"
+   :confirmation-text                    "Are you sure you want to share anonymous data with Status?"
+   :confirmation-action                  "Share"
 
    ;;drawer
    :switch-users                         "Switch users"
@@ -161,6 +165,14 @@
    :step-i-of-n                          "Step {{step}} of {{number}}"
    :word-n-description                   "In order to check if you have backed up your seed phrase correctly, enter the word #{{number}} above."
    :word-n                               "Word #{{number}}"
+
+   :wallet-onboarding-title              "Simple and secure cryptocurrency wallet"
+   :wallet-onboarding-description        "Send, receive, and store your cryptocurrency with the Status Wallet"
+   :wallet-onboarding-set-up             "Let’s get set up"
+   :wallet-set-up-title                  "Set up your wallet"
+   :wallet-set-up-signing-phrase         "This is your personal transaction phrase that you’ll use everytime you make a transaction. Make sure to write it down on a piece of paper, store it somewhere, and only confirm transactions when you see these three words."
+   :wallet-set-up-confirm-title          "Wrote it down?"
+   :wallet-set-up-confirm-description    "You won’t be able to see your 3-word transaction phrase again after this."
 
    ;;make_photo
    :image-source-title                   "Edit picture"

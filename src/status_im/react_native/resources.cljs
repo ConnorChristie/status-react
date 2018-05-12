@@ -32,6 +32,7 @@
    :decentraland       (js/require "./resources/images/contacts/decentraland.png")
    :cryptocribs        (js/require "./resources/images/contacts/cryptocribs.png")
    :cryptofighters     (js/require "./resources/images/contacts/cryptofighters.png")
+   :airswap            (js/require "./resources/images/contacts/airswap.png")
 
    :console            (js/require "./resources/images/contacts/console.png")})
 
@@ -45,4 +46,6 @@
    :welcome-image   (js/require "./resources/images/ui/welcome-image.png")
    :lock            {:image  (js/require "./resources/images/ui/lock.png")
                      :width  993
-                     :height 933}})
+                     :height 933}
+   :wallet-welcome  (js/require "./resources/images/ui/wallet-welcome.png")
+   :wallet-setup    (js/require "./resources/images/ui/wallet-setup.png")})

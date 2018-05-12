@@ -194,11 +194,17 @@
    (when advanced?
      [advanced-cartouche transaction modal?])])
 
+(defn update-amount-fn [timeout]
+  (fn [amount]
+    (when @timeout
+      (utils/clear-timeout @timeout))
+    (reset! timeout (utils/set-timeout #(re-frame/dispatch [:wallet.send/set-and-validate-amount amount]) 500))))
+
 (defn- send-transaction-panel [{:keys [modal? transaction scroll advanced? symbol]}]
   (let [{:keys [amount amount-error signing? to to-name token sufficient-funds? in-progress? from-chat?]} transaction
-        symbol (or (:symbol token) symbol)
-        amount (or (:value token) amount)
-        amount-text-value (atom nil)]
+        symbol  (or (:symbol token) symbol)
+        amount  (or (:value token) amount)
+        timeout (atom nil)]
     [wallet.components/simple-screen {:avoid-keyboard? (not modal?)
                                       :status-bar-type (if modal? :modal-wallet :wallet)}
      [toolbar from-chat? (if modal? act/close-white act/back-white)
@@ -223,8 +229,7 @@
                                      :input-options {:default-value  (str (money/to-fixed (money/wei->ether amount)))
                                                      :max-length     21
                                                      :on-focus       (fn [] (when (and scroll @scroll) (utils/set-timeout #(.scrollToEnd @scroll) 100)))
-                                                     :on-change-text #(reset! amount-text-value %)
-                                                     :on-end-editing #(re-frame/dispatch [:wallet.send/set-and-validate-amount @amount-text-value])}}]
+                                                     :on-change-text (update-amount-fn timeout)}}]
         [advanced-options advanced? transaction modal?]]]
       (if signing?
         [signing-buttons
